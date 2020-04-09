@@ -165,10 +165,10 @@ The following examples show how generic type parameter lists and function signat
 NOTE: in the following examples the identifiers in the unfolded example are internal compiler representation i.e. not available for use in the original code
 ```rust
 // single type parameter pack
-fn foo<A@..>(a: A@..)       // => fn foo<A1, A2, B>(a1: A1, a2: A2)
-fn foo<A@..>((a: A)@..)     // => fn foo<A1, A2, B>(a1: A1, a2: A2)
-fn foo<A@..>(a: (A@..))     // => fn foo<A1, A2, B>(a: (A1, A2))
-fn foo<(A@..)>(a: (A@..))   // => fn foo<(A1, A2), B>(a: (A1, A2))
+fn foo<A@..>(a: A@..)       // => fn foo<A1, A2>(a1: A1, a2: A2)
+fn foo<A@..>((a: A)@..)     // => fn foo<A1, A2>(a1: A1, a2: A2)
+fn foo<A@..>(a: (A@..))     // => fn foo<A1, A2>(a: (A1, A2))
+fn foo<(A@..)>(a: (A@..))   // => fn foo<(A1, A2)>(a: (A1, A2))
 
 // multiple type parameter packs
 fn foo<A@.., B@..>((a: A)@.., (b: B)@..)         // => ERROR: multiple type parameter packs
@@ -179,7 +179,7 @@ fn foo<(A@..), (B@..)>(((a, b)@..): ((A, B)@..)) // => fn foo<(A1, A2), (B1, B2)
 
 // tuple arguments
 fn foo<A>(a: A)                          // => fn foo<(A1, A2)>(a: (A1, A2))
-fn foo<A>((a@..): A)                     // => fn foo<(A1, A2)>((a1, a2): (A1, A2))
+fn foo<A>((a@..): A)                     // => Error: A must be a type pack unfolding
 fn foo<A@(..)>(a: A)                     // => fn foo<(A1, A2)>(a: (A1, A2))
 fn foo<A@(..)>(a: (A@..))                // => ERROR: A is not a type parameter pack
 fn foo<A@(As@..)>((a@..): A, b: (As@..)) // => fn foo<(A1, A2)>((a1, a2): (A1, A2), b: (A1, A2))
@@ -192,10 +192,6 @@ fn foo<A@..>(a: (A@..)) -> Option<A@..>     // ERROR: Option is not a variadic g
 fn foo<A@..>(a: (A@..)) -> (Option<A>@..)   // => fn foo<A1, A2>(a: (A1, A2)) -> (Option<A1>, Option<A2>)
 fn foo<(A@..), (B@..)>(a: (A@..), b: (B@..)) -> (Result<A, B>@..) // => fn foo<A1, A2, B1, B2>(a: (A1, A2), b: (B1, B2)) -> (Result<A1, B1>, Result<A2, B2>)
 ```
-
-## Implementation
-
-TODO
 
 # Drawbacks
 [drawbacks]: #drawbacks
