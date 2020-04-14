@@ -41,17 +41,6 @@ fn zip<(A @ ..), (B @ ..)>((a: A) @ .., (b: B) @ ..)
 }
 ```
 
-A function similar to `std::iter::Iterator::all` could be implemented as:
-
-```rust
-fn all<T @ ..>((t @ ..): (T @ ..))
-    -> bool
-    where (T: Into<bool> + Copy) @ ..
-{
-    (t.into() && ..)
-}
-```
-
 ### Tuple Hash Implementation
 
 The current implementation of the `Hash` trait requires a macro which is used to generate implementations for different tuple arities. This
@@ -120,7 +109,6 @@ TODO
 - A variable of parameter pack type is called a _variable parameter pack_
 - The expression `<Expression>@..` is called a _variable pack expansion_, in this context `..` is called _expansion operator_.
 - In `fn foo<A@..>(a: A)@..)` the syntax `(a: A)@..` is called an _function argument pack expansion_.
-- The expression `(<Expression> <Operator> ..)` (and it's variations) is called a _fold expression_
 - When making a statement about a _prameter pack_ it may either be a type or a variable parameter pack.
 - A parameter pack is _within the scope_ of an expansion operator if it's mentioned within the type/expression of the pack expansion and it is not _within the scope_ of any inner pack expansion.
 - A parameter pack not within the scope of an expansion operator is _free_.
@@ -130,7 +118,6 @@ TODO
 - [Type and Lifetime Parameters](https://doc.rust-lang.org/stable/reference/items/generics.html): a `TypeParam`'s `IDENTIFIER` may also be either `(IDENTIFIER@)?..` or `(IDENTIFIER@)?((IDENTIFIER@)?..)`
 - [Type expressions](https://doc.rust-lang.org/stable/reference/types.html#type-expressions): add `TypePackExpansion: ..Type` where the given Type must mention at least one parameter pack
 - [Tuple patterns](https://doc.rust-lang.org/stable/reference/patterns.html#tuple-patterns): change the third case of tuple pattern items to `(Pattern,)* (IDENTIFIER @)? .. ((, Pattern)+ ,? )?`
-- [Expressions](https://doc.rust-lang.org/stable/reference/expressions.html#expressions): add `FoldExpression: (Expression OPERATOR ..) | (.. OPERATOR Expression) | (Expression OPERATOR .. OPERATOR ConstantExpression) | (ConstantExpression OPERATOR .. OPERATOR Expression)` where the expression must mention at least one parameter pack
 - In parameter pack expansions of the form `t @ ..` the `@` operator extends the matched type or expressions as far to the left as possible i.e. until the next `,`, `(` or `<` in `foo(1, t@..)`, `foo(t@..)` and `fn foo<T@..>`, respectively. Paranthesis may be optionally used to improve readability, i.e. `foo(1, (t)@..)`.
 
 ## Semantics
@@ -140,10 +127,6 @@ NOTE: In the following `[...]` is to be read as a placeholder for elements of a 
 Given a type parameter pack `T` and a variable parameter pack `t`
 - `Type(T)@..` (a type containing a parameter pack type T) unfolds to `Type(T1), Type(T2), [...], Type(Tn)`,
 - `Expr(t)@..` unfolds to `Expr(t1), Expr(t2), [...], Expr(tn)`,
-- `(Expr(t) op ..)` unfolds to `Expr(t1) op (Expr(t2) op ([...] op Expr(tn)))`
-- `(.. op Expr(t))` unfolds to `((Expr(t1) op Expr(t2)) op [...]) op Expr(tn)`
-- `(Expr(t) op .. op Expr)` unfolds to `Expr(t1) op (Expr(t2) op ([...] op (Expr(tn) op Expr)))`
-- `(Expr op .. op Expr(t))` unfolds to `(((Expr op Expr(t1)) op Expr(t2)) op [...]) op Expr(tn)`
 - For any pack expansion or fold expression: when multiple parameter packs are within the scope of an expansion operator those parameter packs must have the same size and are expanded simultaneously.
 
 ## Examples
@@ -401,4 +384,8 @@ const fn arity<T, Ts@..>() -> usize
         1 + arity<Ts@..>()
     }
 }
-``` 
+```
+
+## Fold expressions
+
+TODO
