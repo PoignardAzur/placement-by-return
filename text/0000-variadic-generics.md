@@ -36,6 +36,7 @@ A function similar to `std::iter::Iterator::zip` that converts two tuples `(a1, 
 ```rust
 fn zip<(A @ ..), (B @ ..)>((a: A) @ .., (b: B) @ ..)
     -> ((A, B) @ ..)
+    where (A @ ..): SameArityAs<(B @ ..)>
 {
     ((a, b) @ ..)
 }
@@ -129,6 +130,23 @@ Given a type parameter pack `T` and a variable parameter pack `t`
 - `Expr(t)@..` unfolds to `Expr(t1), Expr(t2), [...], Expr(tn)`,
 - For any pack expansion or fold expression: when multiple parameter packs are within the scope of an expansion operator those parameter packs must have the same size and are expanded simultaneously.
 
+## Traits
+
+Add the following trait to the standard library:
+```rust
+trait SameArityAs<(T@..)> {}
+impl SameArityAs<()> for () {}
+impl<(A, As@..), (B, Bs@..)> SameArityAs<(A, As@..)> for (B, Bs@..)
+    where (As@..): SameArityAs<(Bs@..)>
+{}
+
+trait HasArity<const N: usize> {}
+impl HasArity<0> for () {}
+impl<A, As@..> HasArity<N> for (A, As@..)
+    where (As@..): HasArity<N-1>
+{}
+```
+
 ## Examples
 
 ### Paranthesis
@@ -157,8 +175,12 @@ fn foo<(A@..)>(a: (A@..))   // => fn foo<(A1, A2)>(a: (A1, A2))
 fn foo<A@.., B@..>((a: A)@.., (b: B)@..)         // => ERROR: multiple type parameter packs
 fn foo<(A@..), B@..>((a: A)@.., (b: B)@..)       // => ERROR: multiple function argument expansions
 fn foo<(A@..), B@..>(a: (A@..), (b: B)@..)       // => fn foo<(A1, A2), B1, B2>(a: (A1, A2), b1: B1, b2: B2)
-fn foo<(A@..), (B@..)>(((a, b): (A, B))@..)      // => fn foo<(A1, A2), (B1, B2)>((a1, b1): (A1, B1), (a2, b2): (A2, B2))
-fn foo<(A@..), (B@..)>(((a, b)@..): ((A, B)@..)) // => fn foo<(A1, A2), (B1, B2)>(((a1, b1), (a2, b2)): ((A1, B1), (A1, B2)))
+fn foo<(A@..), (B@..)>(((a, b): (A, B))@..)      // => ERROR: A and B may have different arities
+fn foo<(A@..), (B@..)>(((a, b): (A, B))@..)      // => fn foo<(A1, A2), (B1, B2)>((a1, b1): (A1, B1), (a2, b2): (A2, B2)) where ...
+    where (A@..): SameArityAs<(B@..)>
+fn foo<(A@..), (B@..)>(((a, b)@..): ((A, B)@..)) // => ERROR: A and B may have different arities
+fn foo<(A@..), (B@..)>(((a, b)@..): ((A, B)@..)) // => fn foo<(A1, A2), (B1, B2)>(((a1, b1), (a2, b2)): ((A1, B1), (A1, B2))) where ...
+    where (A@..): SameArityAs<(B@..)>
 
 // tuple arguments
 fn foo<A>(a: A)                          // => fn foo<(A1, A2)>(a: (A1, A2))
@@ -171,9 +193,27 @@ fn foo<A@(As@..)>((a@..): A, b: (As@..)) // => fn foo<(A1, A2)>((a1, a2): (A1, A
 fn foo<A@..>(a: (A@..)) -> A@..             // ERROR: a function can not return a parameter pack
 fn foo<A@..>(a: (A@..)) -> (A@..)           // => fn foo<A1, A2>(a: (A1, A2)) -> (A1, A2)
 fn foo<A>(a: A) -> (A@..)                   // => ERROR: A is not a type parameter pack
-fn foo<A@..>(a: (A@..)) -> Option<A@..>     // ERROR: Option is not a variadic generic
+fn foo<A@..>(a: (A@..)) -> Option<A@..>     // => ERROR: Option is not a variadic generic
+fn foo<A@..>(a: (A@..)) -> Option<A@..>     // => fn foo<A1>(a: (A1,)) -> Option<A1> where ...
+    where (A@..): HasArity<1>
 fn foo<A@..>(a: (A@..)) -> (Option<A>@..)   // => fn foo<A1, A2>(a: (A1, A2)) -> (Option<A1>, Option<A2>)
-fn foo<(A@..), (B@..)>(a: (A@..), b: (B@..)) -> (Result<A, B>@..) // => fn foo<A1, A2, B1, B2>(a: (A1, A2), b: (B1, B2)) -> (Result<A1, B1>, Result<A2, B2>)
+fn foo<(A@..), (B@..)>(a: (A@..), b: (B@..)) -> (Result<A, B>@..) // => ERROR: A and B may have different arities
+fn foo<(A@..), (B@..)>(a: (A@..), b: (B@..)) -> (Result<A, B>@..) // => fn foo<A1, A2, B1, B2>(a: (A1, A2), b: (B1, B2)) -> (Result<A1, B1>, Result<A2, B2>) where ...
+    where (A@..): SameArityAs<(B@..)>
+
+### Function Implementations
+
+```rust
+fn zip_and_do_sth<(A@..), (B@..)>((a: A)@.., (b: B)@..)
+{
+    do_sth((a, b)@..) // => ERROR: a and b may have different lengths
+}
+
+fn zip_and_do_sth<(A@..), (B@..)>((a: A)@.., (b: B)@..)
+    where (A@..): SameArityAs<(B@..)>
+{
+    do_sth((a, b)@..) // OK
+}
 ```
 
 # Drawbacks
@@ -350,14 +390,6 @@ fn join<(T@..)@..>(((t@..): T)@..) -> ((T@..)@..)
 }
 ```
 which would allow for an arbitrary number of tuples of arbitrary size. It would need examination as to wether this would have actual real-world use cases and wether any readable and unambiguous syntax could be found.
-
-## Checks of a parameter pack's arity
-
-Add a const function (e.g. `const fn arity<T@..>() -> usize`) that returns the arity of a type parameter pack. When additionally it would be allowed to use const boolean expressions in where clauses, it would be possible to write:
-```rust
-fn join<(A@..), (B@..)>((a@..): (A@..), (b@..): (B@..)) -> ((A, B)@..)
-    where arity<A@..> == arity<B@..>
-```
 
 ## Recursion for variadic generics
 
