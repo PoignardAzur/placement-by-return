@@ -34,7 +34,7 @@ pub trait Fn<Args @ ..>: FnMut<Args @ ..> {
 A function similar to `std::iter::Iterator::zip` that converts two tuples `(a1, ..., an)`, `(b1, ..., bn)` to `((a1, b1), ..., (an, bn))` could be implemented as:
 
 ```rust
-fn zip<(A @ ..), (B @ ..)>((a: A) @ .., (b: B) @ ..)
+fn zip<(A @ ..), (B @ ..)>((a @ ..): (A @ ..), (b @ ..): (B @ ..))
     -> ((A, B) @ ..)
     where (A @ ..): SameArityAs<(B @ ..)>
 {
