@@ -21,10 +21,10 @@ This RFC proposes to add support for variadic generics as an extension of Rust's
 The [current implementation](https://doc.rust-lang.org/src/core/ops/function.rs.html#69-73) would translate to:
 
 ```rust
-pub trait Fn<Args @ ..>: FnMut<Args @ ..> {
-    fn call(&self, (param: Args) @ ..) -> Self::Output
+pub trait Fn<Args@..>: FnMut<Args@..> {
+    fn call(&self, (param: Args)@..) -> Self::Output
     {
-        func(param @ ..)
+        func(param@..)
     }
 }
 ```
@@ -34,11 +34,11 @@ pub trait Fn<Args @ ..>: FnMut<Args @ ..> {
 A function similar to `std::iter::Iterator::zip` that converts two tuples `(a1, ..., an)`, `(b1, ..., bn)` to `((a1, b1), ..., (an, bn))` could be implemented as:
 
 ```rust
-fn zip<(A @ ..), (B @ ..)>((a @ ..): (A @ ..), (b @ ..): (B @ ..))
-    -> ((A, B) @ ..)
-    where (A @ ..): SameArityAs<(B @ ..)>
+fn zip<(A@..), (B@..)>((a@..): (A@..), (b@..): (B@..))
+    -> ((A, B)@..)
+    where (A@..): SameArityAs<(B@..)>
 {
-    ((a, b) @ ..)
+    ((a, b)@..)
 }
 ```
 
@@ -80,19 +80,17 @@ macro_rules! last_type {
 This implementation will translate to:
 
 ```rust
-
-impl<Ts @ .., T> Hash for (Ts @ .., T)
+impl<Ts@.., T> Hash for (Ts@.., T)
 where
-    (T: Hash) @ ..,
+    (T: Hash)@..,
     Last: Hash + ?Sized,
 {
     fn hash<S: Hasher>(&self, state: &mut S) {
-        let (ref tuple @ .., ref last) = *self;
-        (tuple.hash(state) @ ..);
+        let (ref tuple@.., ref last) = *self;
+        (tuple.hash(state)@..);
         last.hash(state);
     }
 }
-
 ```
 
 # Guide-level explanation
