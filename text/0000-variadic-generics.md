@@ -87,7 +87,7 @@ where
 {
     fn hash<S: Hasher>(&self, state: &mut S) {
         let (ref tuple@.., ref last) = *self;
-        (tuple.hash(state)@..);
+        ((tuple.hash(state))@..);
         last.hash(state);
     }
 }
@@ -107,7 +107,7 @@ TODO
 - A type expression `<Type>@..` is called a _type pack expansion_, in this context `..` is called _expansion operator_.
 - A variable of parameter pack type is called a _variable parameter pack_
 - The expression `<Expression>@..` is called a _variable pack expansion_, in this context `..` is called _expansion operator_.
-- In `fn foo<A@..>(a: A)@..)` the syntax `(a: A)@..` is called an _function argument pack expansion_.
+- In `fn foo<A@..>((a: A)@..)` the syntax `(a: A)@..` is called an _function argument pack expansion_.
 - When making a statement about a _prameter pack_ it may either be a type or a variable parameter pack.
 - A parameter pack is _within the scope_ of an expansion operator if it's mentioned within the type/expression of the pack expansion and it is not _within the scope_ of any inner pack expansion.
 - A parameter pack not within the scope of an expansion operator is _free_.
@@ -158,7 +158,6 @@ The following examples show how paranthesis affect unfoldings:
 (1, (t)@.., 1)      // => (1, t1, t2, [...], tn, 1)
 (1, (t@..), 1)      // => (1, (t1, t2, [...], tn), 1)
 (1, (t,)@.., 1)     // => (1, (t1,), (t2,), [...], (tn,), 1)
-(1, ((t,))@.., 1)   // => (1, (t1,), (t2,), [...], (tn,), 1)
 ```
 
 ### Generic Type Parameters and Function Signatures
@@ -167,10 +166,10 @@ The following examples show how generic type parameter lists and function signat
 NOTE: in the following examples the identifiers in the unfolded example are internal compiler representation i.e. not available for use in the original code
 ```rust
 // single type parameter pack
-fn foo<A@..>(a: A@..)       // => fn foo<A1, A2>(a1: A1, a2: A2)
 fn foo<A@..>((a: A)@..)     // => fn foo<A1, A2>(a1: A1, a2: A2)
 fn foo<A@..>(a: (A@..))     // => fn foo<A1, A2>(a: (A1, A2))
 fn foo<(A@..)>(a: (A@..))   // => fn foo<(A1, A2)>(a: (A1, A2))
+fn foo<A>((a@..): A)        // => Error: A must be a type pack unfolding
 
 // multiple type parameter packs
 fn foo<A@.., B@..>((a: A)@.., (b: B)@..)         // => ERROR: multiple type parameter packs
@@ -183,20 +182,11 @@ fn foo<(A@..), (B@..)>(((a, b)@..): ((A, B)@..)) // => ERROR: A and B may have d
 fn foo<(A@..), (B@..)>(((a, b)@..): ((A, B)@..)) // => fn foo<(A1, A2), (B1, B2)>(((a1, b1), (a2, b2)): ((A1, B1), (A1, B2))) where ...
     where (A@..): SameArityAs<(B@..)>
 
-// tuple arguments
-fn foo<A>(a: A)                          // => fn foo<(A1, A2)>(a: (A1, A2))
-fn foo<A>((a@..): A)                     // => Error: A must be a type pack unfolding
-fn foo<A@(..)>(a: A)                     // => fn foo<(A1, A2)>(a: (A1, A2))
-fn foo<A@(..)>(a: (A@..))                // => ERROR: A is not a type parameter pack
-fn foo<A@(As@..)>((a@..): A, b: (As@..)) // => fn foo<(A1, A2)>((a1, a2): (A1, A2), b: (A1, A2))
-
 // return types
-fn foo<A@..>(a: (A@..)) -> A@..             // ERROR: a function can not return a parameter pack
+fn foo<A@..>(a: (A@..)) -> A@..             // => ERROR: a function can not return a parameter pack
 fn foo<A@..>(a: (A@..)) -> (A@..)           // => fn foo<A1, A2>(a: (A1, A2)) -> (A1, A2)
 fn foo<A>(a: A) -> (A@..)                   // => ERROR: A is not a type parameter pack
 fn foo<A@..>(a: (A@..)) -> Option<A@..>     // => ERROR: Option is not a variadic generic
-fn foo<A@..>(a: (A@..)) -> Option<A@..>     // => fn foo<A1>(a: (A1,)) -> Option<A1> where ...
-    where (A@..): HasArity<1>
 fn foo<A@..>(a: (A@..)) -> (Option<A>@..)   // => fn foo<A1, A2>(a: (A1, A2)) -> (Option<A1>, Option<A2>)
 fn foo<(A@..), (B@..)>(a: (A@..), b: (B@..)) -> (Result<A, B>@..) // => ERROR: A and B may have different arities
 fn foo<(A@..), (B@..)>(a: (A@..), b: (B@..)) -> (Result<A, B>@..) // => fn foo<A1, A2, B1, B2>(a: (A1, A2), b: (B1, B2)) -> (Result<A1, B1>, Result<A2, B2>) where ...
@@ -375,8 +365,6 @@ Advantages and drawbacks: see [here](#alternatives)
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
-
-- [ ] Should `t@..` require paranthesis? (i.e. `(t)@..`) This would complicate `(t,)@..` to `((t,))@..` but would disallow `fn foo(t: T@..)` (which unintuitively unfolds `t: T`) and require `fn foo((t: T)@..)`. Also, a mixture of both could be possible, e.g. require paranthesis, but allow them to be missing for tuple expressions.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
