@@ -114,19 +114,22 @@ TODO
 
 ## Grammer
 
-- [Type and Lifetime Parameters](https://doc.rust-lang.org/stable/reference/items/generics.html): a `TypeParam`'s `IDENTIFIER` may also be either `(IDENTIFIER@)?..` or `(IDENTIFIER@)?((IDENTIFIER@)?..)`
-- [Type expressions](https://doc.rust-lang.org/stable/reference/types.html#type-expressions): add `TypePackExpansion: ..Type` where the given Type must mention at least one parameter pack
-- [Tuple patterns](https://doc.rust-lang.org/stable/reference/patterns.html#tuple-patterns): change the third case of tuple pattern items to `(Pattern,)* (IDENTIFIER @)? .. ((, Pattern)+ ,? )?`
-- In parameter pack expansions of the form `t @ ..` the `@` operator extends the matched type or expressions as far to the left as possible i.e. until the next `,`, `(` or `<` in `foo(1, t@..)`, `foo(t@..)` and `fn foo<T@..>`, respectively. Paranthesis may be optionally used to improve readability, i.e. `foo(1, (t)@..)`.
-
-## Semantics
-
-NOTE: In the following `[...]` is to be read as a placeholder for elements of a comma-separated list of arbitrary length, NOT actual rust source code!
-
-Given a type parameter pack `T` and a variable parameter pack `t`
-- `Type(T)@..` (a type containing a parameter pack type T) unfolds to `Type(T1), Type(T2), [...], Type(Tn)`,
-- `Expr(t)@..` unfolds to `Expr(t1), Expr(t2), [...], Expr(tn)`,
-- For any pack expansion or fold expression: when multiple parameter packs are within the scope of an expansion operator those parameter packs must have the same size and are expanded simultaneously.
+- [Type and Lifetime Parameters](https://doc.rust-lang.org/stable/reference/items/generics.html): change the type param production to
+    - `TypeParam: SimpleTypeParam|VariadicTypeParam|TupleTypeParam`
+    - `SimpleTypeParam: OuterAttribute? IDENTIFIER(:TypeParamBounds?)?(=Type)?`
+    - `VariadicTypeParam: (SimpleTypeParam)@..|IDENTIFIER@..`
+    - `TupleTypeParam: (TupleTypeParamItems?)(:TypeParamBounds?)?(=Type)?`
+    - `TupleTypeParamItems: SimpleTypeParam,|SimpleTypeParam(,SimpleTypeParam)+,?|(SimpleTypeParam,)*(SimpleTypeParam)@..((,SimpleTypeParam)+)?,?`
+- [Type expressions](https://doc.rust-lang.org/stable/reference/types.html#type-expressions): add `TypePackExpansion: IDENTIFIER@..|TupleType@..|(Type)@..` where the given Type must mention at least one parameter pack
+- [Tuple patterns](https://doc.rust-lang.org/stable/reference/patterns.html#tuple-patterns): change the tuple pattern grammer to
+    - `TuplePatternItems: Pattern,|Pattern(,Pattern)+,?|(Pattern,)* VariadicTuplePatternItem ((, Pattern)+ ,? )?`
+    - `VariadicTuplePatternItem: ..|IDENTIFIER@..|TuplePattern@..|(Pattern)@..`
+- [Functions](https://doc.rust-lang.org/stable/reference/items/functions.html?highlight=function#functions) (using the grammer from [this post](https://internals.rust-lang.org/t/pre-rfc-variadic-generics/12123/21?u=alexanderlinne)):
+    - `FnArgs: FnArg(,FnArg)*,?|(FnArg,)*VariadicFnArg((,FnArg)+)?,?`
+    - `FnArg: SelfValue|SelfRef|Regular`
+    - `Regular: FnSigInput`
+    - `FnSigInput: (Pattern:)?Type`
+    - `VariadicFnArg: Type@..|(FnSigInput)@..`
 
 ## Traits
 
