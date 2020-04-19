@@ -192,7 +192,18 @@ fn foo<(A@..), (B@..)>(a: (A@..), b: (B@..)) -> (Result<A, B>@..) // => ERROR: A
 fn foo<(A@..), (B@..)>(a: (A@..), b: (B@..)) -> (Result<A, B>@..) // => fn foo<A1, A2, B1, B2>(a: (A1, A2), b: (B1, B2)) -> (Result<A1, B1>, Result<A2, B2>) where ...
     where (A@..): SameArityAs<(B@..)>
 
-### Function Implementations
+// trait bounds
+fn foo<A@..: Bound>((a: A)@..)    // => ERROR: a bound on a parameter pack is not allowed
+fn foo<(A: Bound)@..>((a: A)@..)  // => fn foo<A1: Bound, A2: Bound>(a: (A1, A2))
+fn foo<(A@..): Bound>((a: A)@..) // => fn foo<(A1, A2): Bound>(a: (A1, A2))
+
+// default type parameters
+fn foo<A@.. = Bar>((a: A)@..)    // => ERROR: parameter packs cannot be defaulted
+fn foo<(A = Bar)@..>((a: A)@..)  // => fn foo<A1 = Bar, A2 = Bar>(a: (A1, A2))
+fn foo<(A@..) = Bar>((a: A)@..) // => fn foo<(A1, A2) = Bar>(a: (A1, A2))
+```
+
+### Type Checking
 
 ```rust
 fn zip_and_do_sth<(A@..), (B@..)>((a: A)@.., (b: B)@..)
@@ -205,6 +216,12 @@ fn zip_and_do_sth<(A@..), (B@..)>((a: A)@.., (b: B)@..)
 {
     do_sth((a, b)@..) // OK
 }
+```
+
+```rust
+fn foo<(A@..)>((a, as@..): (A@..,))        // => ERROR: pattern matches 1 or more elements, but type may contain 0 elements
+fn foo<(A, As@..)>((a, as@..): (A, As@..)) // => OK
+fn foo<(A@..)>((a, b): (A@..))             // => ERROR: trying to match variadic tuple with non-variadic tuple pattern
 ```
 
 # Drawbacks
